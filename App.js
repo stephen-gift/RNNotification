@@ -25,7 +25,7 @@ export default function App() {
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("default", {
         name: "default",
-        importance: Notifications.Android.Importance.DEFAULT,
+        importance: Notifications.Android.importance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF03004B",
       });
@@ -66,30 +66,30 @@ export default function App() {
   }, []);
 
   // LOCAL NOTIFICATION
-  // useEffect(() => {
-  //   const subscription1 = Notifications.addNotificationReceivedListener(
-  //     (notification) => {
-  //       console.log("NOTIFICATION RECEIVED");
-  //       console.log(notification);
-  //       const userName = notification.request.content.data.userName;
-  //       console.log(userName);
-  //     }
-  //   );
+  useEffect(() => {
+    const subscription1 = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("NOTIFICATION RECEIVED");
+        console.log(notification);
+        const userName = notification.request.content.data.userName;
+        console.log(userName);
+      }
+    );
 
-  //   const subscription2 = Notifications.addNotificationResponseReceivedListener(
-  //     (response) => {
-  //       console.log("NOTIFICATION RESPONSE RECEIVED");
-  //       console.log(response);
-  //       const userName = response.notification.request.content.data.userName;
-  //       console.log(userName);
-  //     }
-  //   );
+    const subscription2 = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log("NOTIFICATION RESPONSE RECEIVED");
+        console.log(response);
+        const userName = response.notification.request.content.data.userName;
+        console.log(userName);
+      }
+    );
 
-  //   return () => {
-  //     subscription1.remove();
-  //     subscription2.remove();
-  //   };
-  // }, []);
+    return () => {
+      subscription1.remove();
+      subscription2.remove();
+    };
+  }, []);
 
   function scheduleLocalNotificationHandler() {
     Notifications.scheduleNotificationAsync({
@@ -139,6 +139,10 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <Button
+        title="Schedule Notification"
+        onPress={scheduleLocalNotificationHandler}
+      />
       <Button
         title="Schedule Notification"
         onPress={schedulePushNotificationHandler}
