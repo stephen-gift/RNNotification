@@ -1,12 +1,13 @@
 import { StatusBar } from "expo-status-bar";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { Button, Platform, StyleSheet, Text, View } from "react-native";
 import * as Notifications from "expo-notifications";
-import { useEffect } from "react";
+import * as Device from "expo-device";
+import { useState, useEffect } from "react";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => {
     return {
-      shouldPlaySound: false,
+      shouldPlaySound: true,
       shouldSetBadge: false,
       shouldShowAlert: true,
     };
@@ -14,6 +15,57 @@ Notifications.setNotificationHandler({
 });
 
 export default function App() {
+  const [expoPushToken, setExpoPushToken] = useState("");
+
+  // PUSH NOTIFICATION
+
+  async function registerForPushNotificationsAsync() {
+    let token;
+
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.Android.Importance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF03004B",
+      });
+    }
+
+    if (Device.isDevice) {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        alert("Failed to get push token for push notification!");
+        return;
+      }
+
+      token = await Notifications.getExpoPushTokenAsync({
+        projectId: "5760c46a-c20c-4731-b916-48dde1b7f9bf",
+      });
+      console.log(token);
+    } else {
+      alert("Must use physical device for Push Notifications");
+    }
+    return token.data;
+  }
+
+  useEffect(() => {
+    registerForPushNotificationsAsync()
+      .then((token) => {
+        console.log("token: ", token);
+        setExpoPushToken(token);
+      })
+      .catch((error) => console.log(error));
+  }, []);
+
+  // LOCAL NOTIFICATION
   useEffect(() => {
     const subscription1 = Notifications.addNotificationReceivedListener(
       (notification) => {
@@ -39,7 +91,7 @@ export default function App() {
     };
   }, []);
 
-  function scheduleNotificationHandler() {
+  function scheduleLocalNotificationHandler() {
     Notifications.scheduleNotificationAsync({
       content: {
         title: "My first local notification",
@@ -52,11 +104,35 @@ export default function App() {
     });
   }
 
+  const schedulePushNotificationHandler = async () => {
+    console.log("running schedulePushNotificationHandler");
+
+    // NOTIFICATION MESSAGE
+    const message = {
+      to: expoPushToken,
+      sound: "default",
+      title: "Original Title",
+      body: "And here is the body!",
+      data: { someData: "goes here" },
+    };
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        host: "exp.host",
+        accept: "application/json",
+        "accept-encoding": " gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Button
         title="Schedule Notification"
-        onPress={scheduleNotificationHandler}
+        onPress={schedulePushNotificationHandler}
       />
       <StatusBar style="auto" />
     </View>
